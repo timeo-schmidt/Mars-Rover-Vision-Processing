@@ -39,27 +39,27 @@ input	reset_n;
 input							s_chipselect;
 input							s_read;
 input							s_write;
-output	reg	[31:0]	s_readdata;
-input	[31:0]				s_writedata;
+output	reg	[31:0]				s_readdata;
+input		[31:0]				s_writedata;
 input	[2:0]					s_address;
 
 
 // streaming sink
-input	[23:0]            	sink_data;
-input								sink_valid;
+input	[23:0]            		sink_data;
+input							sink_valid;
 output							sink_ready;
-input								sink_sop;
-input								sink_eop;
+input							sink_sop;
+input							sink_eop;
 
 // streaming source
-output	[23:0]			  	   source_data;
-output								source_valid;
-input									source_ready;
-output								source_sop;
-output								source_eop;
+output	[23:0]			  	   	source_data;
+output							source_valid;
+input							source_ready;
+output							source_sop;
+output							source_eop;
 
 // conduit export
-input                         mode;
+input                         	mode;
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -209,7 +209,7 @@ MSG_FIFO	MSG_FIFO_inst (
 
 
 //Streaming registers to buffer video signal
-STREAM_REG #(.DATA_WIDTH(26)) in_reg (
+STREAM_REG #(.DATA_WIDTH(26)) buff_1 (
 	.clk(clk),
 	.rst_n(reset_n),
 	.ready_out(sink_ready),
@@ -220,7 +220,8 @@ STREAM_REG #(.DATA_WIDTH(26)) in_reg (
 	.data_in({sink_data,sink_sop,sink_eop})
 );
 
-STREAM_REG #(.DATA_WIDTH(26)) out_reg (
+
+STREAM_REG #(.DATA_WIDTH(26)) buff_3 (
 	.clk(clk),
 	.rst_n(reset_n),
 	.ready_out(out_ready),

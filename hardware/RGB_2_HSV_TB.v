@@ -1,3 +1,5 @@
+// iverilog -Wall -g 2012 -s rgb2hsv_tb -o rgb_hsv_testbench RGB_2_HSV.v RGB_2_HSV_TB.v
+
 module rgb2hsv_tb(
 );
 
@@ -7,7 +9,7 @@ module rgb2hsv_tb(
     reg[7:0] r_in, g_in, b_in;
 
     // RGB 2 HSV outputs
-    reg[9:0] hsv_h;
+    reg[8:0] hsv_h;
     reg[7:0] hsv_s;
     reg[7:0] hsv_v;
 
@@ -36,8 +38,11 @@ module rgb2hsv_tb(
         $finish;
     end
 
+
+
     RGB_2_HSV m(
         .clk(clk),
+        .rst(rst),
         .rgb_r(r_in),
         .rgb_g(g_in),
         .rgb_b(b_in),
@@ -45,4 +50,5 @@ module rgb2hsv_tb(
         .hsv_s(hsv_s),
         .hsv_v(hsv_v)
     );
+
 endmodule
