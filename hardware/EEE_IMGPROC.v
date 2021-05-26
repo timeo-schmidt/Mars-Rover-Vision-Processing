@@ -1,3 +1,5 @@
+//nios2-download C:\Users\Kunststoffe\Desktop\EEE2Rover-master\DE10_LITE_D8M_VIP_16\software\D8M_Camera_Test\D8M_Camera_Test.elf -c 1 -g
+
 module EEE_IMGPROC(
 	// global clock & reset
 	clk,
@@ -70,33 +72,102 @@ parameter MSG_INTERVAL = 6;
 parameter BB_COL_DEFAULT = 24'h00ff00;
 
 
-wire [7:0]   red, green, blue, grey;
+wire [7:0]   red, green, blue; //, grey;
 wire [7:0]   red_out, green_out, blue_out;
 
 wire         sop, eop, in_valid, out_ready;
 ////////////////////////////////////////////////////////////////////////
 
 // Detect red areas
-wire red_detect;
-assign red_detect = red[7] & ~green[7] & ~blue[7];
+// wire red_detect;
+// assign red_detect = red[7] & ~green[7] & ~blue[7];
 
 // Find boundary of cursor box
 
 // Highlight detected areas
-wire [23:0] red_high;
-assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
-assign red_high  =  red_detect ? {8'hff, 8'h0, 8'h0} : {grey, grey, grey};
+// wire [23:0] red_high;
+// assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
+// assign red_high  =  red_detect ? {8'hff, 8'h0, 8'h0} : {grey, grey, grey};
+
+
+// Pixel colour classification
+reg [2:0] pixel_classification;
+PIXEL_PROC m(
+	.clk(clk),
+	.rst(reset_n),
+	.pixel_in({red,green,blue}),
+	.pixel_classification(pixel_classification)
+);
+
+// Paint the top-left corner depending on the ball that is seen
+// wire [23:0] colour_detect;
+// reg [23:0] classified_colour;
+
+// always@(*) begin
+// 	case(pixel_classification)
+// 		3'h0: begin
+// 			classified_colour=24'h000000;
+// 		end
+// 		3'h1: begin
+// 			classified_colour=24'hff0000;
+// 		end
+// 		3'h2: begin
+// 			classified_colour=24'hffff00;
+// 		end
+// 		3'h3: begin
+// 			classified_colour=24'h00ff00;
+// 		end
+// 		3'h4: begin
+// 			classified_colour=24'h0000ff;
+// 		end
+// 		3'h5: begin
+// 			classified_colour=24'hff00ff;
+// 		end
+// 	endcase
+// end
+
+// assign colour_detect = (classified_colour==0) ? {red,green,blue} : classified_colour;
+
+reg [23:0] overlayed_image;
+always@(*) begin
+	// Red
+	if((x == left_red) | (x == right_red) | (y == top_red) | (y == bottom_red)) begin
+		overlayed_image <= 24'hff0000;
+	end
+	// // // Yellow
+	else if((x == left_yellow) | (x == right_yellow) | (y == top_yellow) | (y == bottom_yellow)) begin
+		overlayed_image <= 24'hffff00;
+	end
+	// // // Green
+	else if((x == left_green) | (x == right_green) | (y == top_green) | (y == bottom_green)) begin
+		overlayed_image <= 24'h00ff00;
+	end
+	// // Blue
+	else if((x == left) | (x == right) | (y == top) | (y == bottom)) begin
+		overlayed_image <= 24'h0000ff;
+	end
+	// // Pink
+	else if((x == left_pink) | (x == right_pink) | (y == top_pink) | (y == bottom_pink)) begin
+		overlayed_image <= 24'hff00ff;
+	end
+	else begin
+		overlayed_image <= {red,green,blue};
+	end
+end
 
 // Show bounding box
-wire [23:0] new_image;
-wire bb_active;
-assign bb_active = (x == left) | (x == right) | (y == top) | (y == bottom);
-assign new_image = bb_active ? bb_col : red_high;
+// wire [23:0] new_image;
+// wire bb_active;
+// assign bb_active = (x == left) | (x == right) | (y == top) | (y == bottom);
+// assign new_image = bb_active ? bb_col : colour_detect;
+
 
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet discriptor
 // Don't modify data in non-video packets
-assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : {red,green,blue};
+assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? overlayed_image : {red,green,blue};
+
+//assign {red_out, green_out, blue_out} = colour_detect;
 
 //Count valid pixels to tget the image coordinates. Reset and detect packet type on Start of Packet.
 reg [10:0] x, y;
@@ -120,24 +191,76 @@ end
 
 //Find first and last red pixels
 reg [10:0] x_min, y_min, x_max, y_max;
+
+reg [10:0] x_min_red, 		y_min_red, 		x_max_red, 		y_max_red;
+reg [10:0] x_min_yellow, 	y_min_yellow, 	x_max_yellow, 	y_max_yellow;
+reg [10:0] x_min_green, 	y_min_green, 	x_max_green, 	y_max_green;
+reg [10:0] x_min_blue, 		y_min_blue, 	x_max_blue, 	y_max_blue;
+reg [10:0] x_min_pink, 		y_min_pink, 	x_max_pink, 	y_max_pink;
+
 always@(posedge clk) begin
-	if (red_detect & in_valid) begin	//Update bounds when the pixel is red
-		if (x < x_min) x_min <= x;
-		if (x > x_max) x_max <= x;
-		if (y < y_min) y_min <= y;
-		y_max <= y;
+	if (in_valid) begin
+		// if (red_detect) begin	//Update bounds when the pixel is red
+		// 	if (x < x_min) x_min <= x;
+		// 	if (x > x_max) x_max <= x;
+		// 	if (y < y_min) y_min <= y;
+		// 	y_max <= y;
+		// end
+
+		// Expand regions of found classified pixels for bounding boxes
+		case(pixel_classification)
+			3'h1: begin	// Red
+				if (x < x_min_red) x_min_red <= x;
+				if (x > x_max_red) x_max_red <= x;
+				if (y < y_min_red) y_min_red <= y;
+				y_max_red <= y;
+			end
+			3'h2: begin	// Yellow
+				if (x < x_min_yellow) x_min_yellow <= x;
+				if (x > x_max_yellow) x_max_yellow <= x;
+				if (y < y_min_yellow) y_min_yellow <= y;
+				y_max_yellow <= y;
+			end
+			3'h3: begin // Green
+				if (x < x_min_green) x_min_green <= x;
+				if (x > x_max_green) x_max_green <= x;
+				if (y < y_min_green) y_min_green <= y;
+				y_max_green <= y;
+			end
+			3'h4: begin // Blue
+				if (x < x_min_blue) x_min_blue <= x;
+				if (x > x_max_blue) x_max_blue <= x;
+				if (y < y_min_blue) y_min_blue <= y;
+				y_max_blue <= y;
+			end
+			3'h5: begin // Pink
+				if (x < x_min_pink) x_min_pink <= x;
+				if (x > x_max_pink) x_max_pink <= x;
+				if (y < y_min_pink) y_min_pink <= y;
+				y_max_pink <= y;
+			end
+		endcase
 	end
-	if (sop & in_valid) begin	//Reset bounds on start of packet
-		x_min <= IMAGE_W-11'h1;
-		x_max <= 0;
-		y_min <= IMAGE_H-11'h1;
-		y_max <= 0;
+
+	//Reset bounds on start of packet
+	if (sop & in_valid) begin
+		{x_min,x_min_red,x_min_yellow,x_min_green,x_min_blue,x_min_pink} <= IMAGE_W-11'h1;
+		{x_max,x_max_red,x_max_yellow,x_max_green,x_max_blue,x_max_pink} <= 0;
+		{y_min,y_min_red,y_min_yellow,y_min_green,y_min_blue,y_min_pink} <= IMAGE_H-11'h1;
+		{y_max,y_max_red,y_max_yellow,y_max_green,y_max_blue,y_max_pink} <= 0;
 	end
 end
 
 //Process bounding box at the end of the frame.
 reg [1:0] msg_state;
 reg [10:0] left, right, top, bottom;
+
+reg [10:0] left_red, right_red, top_red, bottom_red;
+reg [10:0] left_yellow, right_yellow, top_yellow, bottom_yellow;
+reg [10:0] left_green, right_green, top_green, bottom_green;
+reg [10:0] left_blue, right_blue, top_blue, bottom_blue;
+reg [10:0] left_pink, right_pink, top_pink, bottom_pink;
+
 reg [7:0] frame_count;
 always@(posedge clk) begin
 	if (eop & in_valid & packet_video) begin  //Ignore non-video packets
@@ -148,6 +271,35 @@ always@(posedge clk) begin
 		top <= y_min;
 		bottom <= y_max;
 
+		// Red
+		left_red <= x_min_red;
+		right_red <= x_max_red;
+		top_red <= y_min_red;
+		bottom_red <= y_max_red;
+
+		// Yellow
+		left_yellow <= x_min_yellow;
+		right_yellow <= x_max_yellow;
+		top_yellow <= y_min_yellow;
+		bottom_yellow <= y_max_yellow;
+
+		// Green
+		left_green <= x_min_green;
+		right_green <= x_max_green;
+		top_green <= y_min_green;
+		bottom_green <= y_max_green;
+
+		// Blue
+		left_blue <= x_min_blue;
+		right_blue <= x_max_blue;
+		top_blue <= y_min_blue;
+		bottom_blue <= y_max_blue;
+
+		// Pink
+		left_pink <= x_min_pink;
+		right_pink <= x_max_pink;
+		top_pink <= y_min_pink;
+		bottom_pink <= y_max_pink;
 
 		//Start message writer FSM once every MSG_INTERVAL frames, if there is room in the FIFO
 		frame_count <= frame_count - 1;
@@ -196,16 +348,16 @@ end
 
 
 //Output message FIFO
-MSG_FIFO	MSG_FIFO_inst (
-	.clock (clk),
-	.data (msg_buf_in),
-	.rdreq (msg_buf_rd),
-	.sclr (~reset_n | msg_buf_flush),
-	.wrreq (msg_buf_wr),
-	.q (msg_buf_out),
-	.usedw (msg_buf_size),
-	.empty (msg_buf_empty)
-	);
+// MSG_FIFO MSG_FIFO_inst (
+// 	.clock (clk),
+// 	.data (msg_buf_in),
+// 	.rdreq (msg_buf_rd),
+// 	.sclr (~reset_n | msg_buf_flush),
+// 	.wrreq (msg_buf_wr),
+// 	.q (msg_buf_out),
+// 	.usedw (msg_buf_size),
+// 	.empty (msg_buf_empty)
+// );
 
 
 //Streaming registers to buffer video signal
