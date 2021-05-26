@@ -41,30 +41,29 @@ input	reset_n;
 input							s_chipselect;
 input							s_read;
 input							s_write;
-output	reg	[31:0]	s_readdata;
-input	[31:0]				s_writedata;
+output	reg	[31:0]				s_readdata;
+input	[31:0]					s_writedata;
 input	[2:0]					s_address;
 
 
 // streaming sink
-input	[23:0]            	sink_data;
-input								sink_valid;
+input	[23:0]            		sink_data;
+input							sink_valid;
 output							sink_ready;
-input								sink_sop;
-input								sink_eop;
+input							sink_sop;
+input							sink_eop;
 
 // streaming source
-output	[23:0]			  	   source_data;
-output								source_valid;
-input									source_ready;
-output								source_sop;
-output								source_eop;
+output	[23:0]			  	   	source_data;
+output							source_valid;
+input							source_ready;
+output							source_sop;
+output							source_eop;
 
 // conduit export
-input                         mode;
+input                         	mode;
 
 ////////////////////////////////////////////////////////////////////////
-//
 parameter IMAGE_W = 11'd640;
 parameter IMAGE_H = 11'd480;
 parameter MESSAGE_BUF_MAX = 256;
@@ -76,19 +75,9 @@ wire [7:0]   red, green, blue; //, grey;
 wire [7:0]   red_out, green_out, blue_out;
 
 wire         sop, eop, in_valid, out_ready;
-////////////////////////////////////////////////////////////////////////
 
-// Detect red areas
-// wire red_detect;
-// assign red_detect = red[7] & ~green[7] & ~blue[7];
 
-// Find boundary of cursor box
-
-// Highlight detected areas
-// wire [23:0] red_high;
-// assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
-// assign red_high  =  red_detect ? {8'hff, 8'h0, 8'h0} : {grey, grey, grey};
-
+// Pixel Classification and Bounding-Box Drawing
 
 // Pixel colour classification
 reg [2:0] pixel_classification;
@@ -99,75 +88,40 @@ PIXEL_PROC m(
 	.pixel_classification(pixel_classification)
 );
 
-// Paint the top-left corner depending on the ball that is seen
-// wire [23:0] colour_detect;
-// reg [23:0] classified_colour;
-
-// always@(*) begin
-// 	case(pixel_classification)
-// 		3'h0: begin
-// 			classified_colour=24'h000000;
-// 		end
-// 		3'h1: begin
-// 			classified_colour=24'hff0000;
-// 		end
-// 		3'h2: begin
-// 			classified_colour=24'hffff00;
-// 		end
-// 		3'h3: begin
-// 			classified_colour=24'h00ff00;
-// 		end
-// 		3'h4: begin
-// 			classified_colour=24'h0000ff;
-// 		end
-// 		3'h5: begin
-// 			classified_colour=24'hff00ff;
-// 		end
-// 	endcase
-// end
-
-// assign colour_detect = (classified_colour==0) ? {red,green,blue} : classified_colour;
-
+// Create the image overlay with the bounding boxes
 reg [23:0] overlayed_image;
 always@(*) begin
 	// Red
 	if((x == left_red) | (x == right_red) | (y == top_red) | (y == bottom_red)) begin
 		overlayed_image <= 24'hff0000;
 	end
-	// // // Yellow
+	// Yellow
 	else if((x == left_yellow) | (x == right_yellow) | (y == top_yellow) | (y == bottom_yellow)) begin
 		overlayed_image <= 24'hffff00;
 	end
-	// // // Green
+	// Green
 	else if((x == left_green) | (x == right_green) | (y == top_green) | (y == bottom_green)) begin
 		overlayed_image <= 24'h00ff00;
 	end
-	// // Blue
+	// Blue
 	else if((x == left) | (x == right) | (y == top) | (y == bottom)) begin
 		overlayed_image <= 24'h0000ff;
 	end
-	// // Pink
+	// Pink
 	else if((x == left_pink) | (x == right_pink) | (y == top_pink) | (y == bottom_pink)) begin
 		overlayed_image <= 24'hff00ff;
 	end
+	// Display the original image, if no bounding box present on current pixel
 	else begin
 		overlayed_image <= {red,green,blue};
 	end
 end
-
-// Show bounding box
-// wire [23:0] new_image;
-// wire bb_active;
-// assign bb_active = (x == left) | (x == right) | (y == top) | (y == bottom);
-// assign new_image = bb_active ? bb_col : colour_detect;
-
 
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet discriptor
 // Don't modify data in non-video packets
 assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? overlayed_image : {red,green,blue};
 
-//assign {red_out, green_out, blue_out} = colour_detect;
 
 //Count valid pixels to tget the image coordinates. Reset and detect packet type on Start of Packet.
 reg [10:0] x, y;
@@ -200,12 +154,6 @@ reg [10:0] x_min_pink, 		y_min_pink, 	x_max_pink, 	y_max_pink;
 
 always@(posedge clk) begin
 	if (in_valid) begin
-		// if (red_detect) begin	//Update bounds when the pixel is red
-		// 	if (x < x_min) x_min <= x;
-		// 	if (x > x_max) x_max <= x;
-		// 	if (y < y_min) y_min <= y;
-		// 	y_max <= y;
-		// end
 
 		// Expand regions of found classified pixels for bounding boxes
 		case(pixel_classification)
@@ -264,12 +212,6 @@ reg [10:0] left_pink, right_pink, top_pink, bottom_pink;
 reg [7:0] frame_count;
 always@(posedge clk) begin
 	if (eop & in_valid & packet_video) begin  //Ignore non-video packets
-
-		//Latch edges for display overlay on next frame
-		left <= x_min;
-		right <= x_max;
-		top <= y_min;
-		bottom <= y_max;
 
 		// Red
 		left_red <= x_min_red;
@@ -390,9 +332,9 @@ STREAM_REG #(.DATA_WIDTH(26)) out_reg (
 
 // Addresses
 `define REG_STATUS    			0
-`define READ_MSG    				1
+`define READ_MSG    			1
 `define READ_ID    				2
-`define REG_BBCOL					3
+`define REG_BBCOL				3
 
 //Status register bits
 // 31:16 - unimplemented
@@ -404,7 +346,7 @@ STREAM_REG #(.DATA_WIDTH(26)) out_reg (
 
 // Process write
 
-reg  [7:0]   reg_status;
+reg [7:0]   reg_status;
 reg	[23:0]	bb_col;
 
 always @ (posedge clk)
