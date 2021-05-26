@@ -39,27 +39,27 @@ input	reset_n;
 input							s_chipselect;
 input							s_read;
 input							s_write;
-output	reg	[31:0]				s_readdata;
-input		[31:0]				s_writedata;
+output	reg	[31:0]	s_readdata;
+input	[31:0]				s_writedata;
 input	[2:0]					s_address;
 
 
 // streaming sink
-input	[23:0]            		sink_data;
-input							sink_valid;
+input	[23:0]            	sink_data;
+input								sink_valid;
 output							sink_ready;
-input							sink_sop;
-input							sink_eop;
+input								sink_sop;
+input								sink_eop;
 
 // streaming source
-output	[23:0]			  	   	source_data;
-output							source_valid;
-input							source_ready;
-output							source_sop;
-output							source_eop;
+output	[23:0]			  	   source_data;
+output								source_valid;
+input									source_ready;
+output								source_sop;
+output								source_eop;
 
 // conduit export
-input                         	mode;
+input                         mode;
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -98,7 +98,7 @@ assign new_image = bb_active ? bb_col : red_high;
 // Don't modify data in non-video packets
 assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : {red,green,blue};
 
-//Count valid pixels to get the image coordinates. Reset and detect packet type on Start of Packet.
+//Count valid pixels to tget the image coordinates. Reset and detect packet type on Start of Packet.
 reg [10:0] x, y;
 reg packet_video;
 always@(posedge clk) begin
@@ -209,7 +209,7 @@ MSG_FIFO	MSG_FIFO_inst (
 
 
 //Streaming registers to buffer video signal
-STREAM_REG #(.DATA_WIDTH(26)) buff_1 (
+STREAM_REG #(.DATA_WIDTH(26)) in_reg (
 	.clk(clk),
 	.rst_n(reset_n),
 	.ready_out(sink_ready),
@@ -220,8 +220,7 @@ STREAM_REG #(.DATA_WIDTH(26)) buff_1 (
 	.data_in({sink_data,sink_sop,sink_eop})
 );
 
-
-STREAM_REG #(.DATA_WIDTH(26)) buff_3 (
+STREAM_REG #(.DATA_WIDTH(26)) out_reg (
 	.clk(clk),
 	.rst_n(reset_n),
 	.ready_out(out_ready),

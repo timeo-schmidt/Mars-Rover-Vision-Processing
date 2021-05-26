@@ -17,7 +17,7 @@ module PIXEL_PROC(
 */
 
 
-// later: parameterise the colour ranges
+// later: neatly parameterise the colour ranges
 
 // Red
 // 0-30; 330-359

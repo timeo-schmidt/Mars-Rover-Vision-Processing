@@ -22,7 +22,7 @@ reg [7:0] hsv_s_m;
 reg [7:0] max_n;
 reg [7:0] division;//division
 
-reg r_g, r_b, g_b;
+wire r_g, r_b, g_b;
 //find max min 1----
 assign r_g = (rgb_r > rgb_g)? 1'b1:1'b0;
 assign r_b = (rgb_r > rgb_b)? 1'b1:1'b0;
