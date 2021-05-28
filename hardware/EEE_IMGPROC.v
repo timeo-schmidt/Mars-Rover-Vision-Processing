@@ -69,6 +69,8 @@ parameter IMAGE_H = 11'd480;
 parameter MESSAGE_BUF_MAX = 256;
 parameter MSG_INTERVAL = 6;
 parameter BB_COL_DEFAULT = 24'h00ff00;
+wire [107:0] classifier_config;
+assign classifier_config = {9'd70,9'd50,9'd30,9'd330,9'd50,9'd70,9'd160,9'd180,9'd200,9'd250,9'd270,9'd330};
 
 
 wire [7:0]   red, green, blue; //, grey;
@@ -84,43 +86,70 @@ reg [2:0] pixel_classification;
 PIXEL_PROC m(
 	.clk(clk),
 	.rst(reset_n),
+	.classifier_config(classifier_config),
 	.pixel_in({red,green,blue}),
 	.pixel_classification(pixel_classification)
 );
 
-// Create the image overlay with the bounding boxes
-reg [23:0] overlayed_image;
+// Colorisation
+reg [23:0] colorised_image;
 always@(*) begin
-	// Red
-	if((x == left_red) | (x == right_red) | (y == top_red) | (y == bottom_red)) begin
-		overlayed_image <= 24'hff0000;
-	end
-	// Yellow
-	else if((x == left_yellow) | (x == right_yellow) | (y == top_yellow) | (y == bottom_yellow)) begin
-		overlayed_image <= 24'hffff00;
-	end
-	// Green
-	else if((x == left_green) | (x == right_green) | (y == top_green) | (y == bottom_green)) begin
-		overlayed_image <= 24'h00ff00;
-	end
-	// Blue
-	else if((x == left) | (x == right) | (y == top) | (y == bottom)) begin
-		overlayed_image <= 24'h0000ff;
-	end
-	// Pink
-	else if((x == left_pink) | (x == right_pink) | (y == top_pink) | (y == bottom_pink)) begin
-		overlayed_image <= 24'hff00ff;
-	end
-	// Display the original image, if no bounding box present on current pixel
-	else begin
-		overlayed_image <= {red,green,blue};
-	end
+	case(pixel_classification)
+		3'h0: begin
+			colorised_image=24'h000000;
+		end
+		3'h1: begin
+			colorised_image=24'hff0000;
+		end
+		3'h2: begin
+			colorised_image=24'hffff00;
+		end
+		3'h3: begin
+			colorised_image=24'h00ff00;
+		end
+		3'h4: begin
+			colorised_image=24'h0000ff;
+		end
+		3'h5: begin
+			colorised_image=24'hff00ff;
+		end
+	endcase
 end
+
+
+// Create the image overlay with the bounding boxes
+// reg [23:0] overlayed_image;
+// always@(*) begin
+// 	// Yellow
+// 	if((x == left_yellow) | (x == right_yellow) | (y == top_yellow) | (y == bottom_yellow)) begin
+// 		overlayed_image <= 24'hffff00;
+// 	end
+// 	// Green
+// 	else if((x == left_green) | (x == right_green) | (y == top_green) | (y == bottom_green)) begin
+// 		overlayed_image <= 24'h00ff00;
+// 	end
+// 	// Blue
+// 	else if((x == left) | (x == right) | (y == top) | (y == bottom)) begin
+// 		overlayed_image <= 24'h0000ff;
+// 	end
+// 	// Pink
+// 	else if((x == left_pink) | (x == right_pink) | (y == top_pink) | (y == bottom_pink)) begin
+// 		overlayed_image <= 24'hff00ff;
+// 	end
+// 	// Red
+// 	else if((x == left_red) | (x == right_red) | (y == top_red) | (y == bottom_red)) begin
+// 		overlayed_image <= 24'hff0000;
+// 	end
+// 	// Display the original image, if no bounding box present on current pixel
+// 	else begin
+// 		overlayed_image <= {red,green,blue};
+// 	end
+// end
 
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet discriptor
 // Don't modify data in non-video packets
-assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? overlayed_image : {red,green,blue};
+assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? colorised_image : {red,green,blue};
 
 
 //Count valid pixels to tget the image coordinates. Reset and detect packet type on Start of Packet.
@@ -290,16 +319,16 @@ end
 
 
 //Output message FIFO
-// MSG_FIFO MSG_FIFO_inst (
-// 	.clock (clk),
-// 	.data (msg_buf_in),
-// 	.rdreq (msg_buf_rd),
-// 	.sclr (~reset_n | msg_buf_flush),
-// 	.wrreq (msg_buf_wr),
-// 	.q (msg_buf_out),
-// 	.usedw (msg_buf_size),
-// 	.empty (msg_buf_empty)
-// );
+MSG_FIFO MSG_FIFO_inst (
+	.clock (clk),
+	.data (msg_buf_in),
+	.rdreq (msg_buf_rd),
+	.sclr (~reset_n | msg_buf_flush),
+	.wrreq (msg_buf_wr),
+	.q (msg_buf_out),
+	.usedw (msg_buf_size),
+	.empty (msg_buf_empty)
+);
 
 
 //Streaming registers to buffer video signal
