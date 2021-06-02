@@ -1,5 +1,3 @@
-//nios2-download C:\Users\Kunststoffe\Desktop\EEE2Rover-master\DE10_LITE_D8M_VIP_16\software\D8M_Camera_Test\D8M_Camera_Test.elf -c 1 -g
-
 module EEE_IMGPROC(
 	// global clock & reset
 	clk,
@@ -85,7 +83,7 @@ wire         sop, eop, in_valid, out_ready;
 reg [2:0] pixel_classification;
 PIXEL_PROC m(
 	.clk(clk),
-	.rst(reset_n),
+	.rst(reset_n),h
 	.classifier_config(classifier_config),
 	.pixel_in({red,green,blue}),
 	.pixel_classification(pixel_classification)
