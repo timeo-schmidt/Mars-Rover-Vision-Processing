@@ -67,8 +67,8 @@ parameter IMAGE_H = 11'd480;
 parameter MESSAGE_BUF_MAX = 256;
 parameter MSG_INTERVAL = 6;
 parameter BB_COL_DEFAULT = 24'h00ff00;
-wire [107:0] classifier_config;
-assign classifier_config = {9'd70,9'd50,9'd30,9'd330,9'd50,9'd70,9'd160,9'd180,9'd200,9'd250,9'd270,9'd330};
+// wire [107:0] classifier_config;
+// assign classifier_config = {9'd70,9'd50,9'd30,9'd330,9'd50,9'd70,9'd160,9'd180,9'd200,9'd250,9'd270,9'd330};
 
 
 wire [7:0]   red, green, blue; //, grey;
@@ -81,13 +81,23 @@ wire         sop, eop, in_valid, out_ready;
 
 // Pixel colour classification
 reg [2:0] pixel_classification;
-PIXEL_PROC m(
+PIXEL_PROC pixel_proc(
 	.clk(clk),
-	.rst(reset_n),h
-	.classifier_config(classifier_config),
+	.rst(reset_n),
+	//.classifier_config(classifier_config),
 	.pixel_in({red,green,blue}),
 	.pixel_classification(pixel_classification)
 );
+
+/*
+module PIXEL_PROC(
+    input               clk,
+    input               rst,
+    input       [107:0] classifier_config,      // The classifier threshold configuration input
+    input       [23:0]  pixel_in,               // The raw concatenated 8-bit RGB channels --> IN
+    output reg  [2:0]   pixel_classification    // 0:unclassified | 1:red ball | 2:yellow ball | 3:green ball | 4:blue ball | 5:pink ball
+);
+*/
 
 // Colorisation
 reg [23:0] colorised_image;

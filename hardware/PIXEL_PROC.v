@@ -1,13 +1,16 @@
 module PIXEL_PROC(
     input               clk,
     input               rst,
-    input       [107:0] classifier_config,      // The classifier threshold configuration input
+    // input       [107:0] classifier_config,      // The classifier threshold configuration input
     input       [23:0]  pixel_in,               // The raw concatenated 8-bit RGB channels --> IN
     output reg  [2:0]   pixel_classification    // 0:unclassified | 1:red ball | 2:yellow ball | 3:green ball | 4:blue ball | 5:pink ball
 );
 
 
 ////// CONFIGURATION //////
+
+reg [107:0] classifier_config;
+assign classifier_config = {9'd330,9'd270,9'd250,9'd200,9'd180,9'd160,9'd70,9'd50,9'd330,9'd30,9'd50,9'd70};
 
 // Here are the accepted HSV colour space ranges for the ping-pong balls
 

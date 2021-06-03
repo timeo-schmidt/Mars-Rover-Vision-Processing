@@ -9,13 +9,13 @@ module pixel_proc_tb(
     // Output
     reg [2:0]    pixel_classification;
 
-    reg [107:0] classifier_config;
+    // wire [107:0] classifier_config;
+    // assign classifier_config = {9'd330,9'd270,9'd250,9'd200,9'd180,9'd160,9'd70,9'd50,9'd330,9'd30,9'd50,9'd70};
 
     initial begin
         clk = 0;
         clk = 1;
         pixel_in = 24'hff0000;
-        classifier_config = {9'd330,9'd270,9'd250,9'd200,9'd180,9'd160,9'd70,9'd50,9'd330,9'd30,9'd50,9'd70};
 
 
          repeat (100) begin
@@ -39,7 +39,7 @@ module pixel_proc_tb(
     PIXEL_PROC m(
         .clk(clk),
         .rst(rst),
-        .classifier_config(classifier_config),
+        //.classifier_config(classifier_config),
         .pixel_in(pixel_in),
         .pixel_classification(pixel_classification)
     );
